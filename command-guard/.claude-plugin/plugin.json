@@ -1,0 +1,20 @@
+{
+  "name": "command-guard",
+  "version": "0.1.0",
+  "description": "설정에 적은 패턴이 든 셸 명령과 Co-Authored-By 가 붙은 git 커밋을 실행 전에 막는다. bypass 모드에서도 막힌다.",
+  "author": { "name": "aron0628", "url": "https://github.com/aron0628" },
+  "userConfig": {
+    "blockedPattern": {
+      "type": "string",
+      "title": "막을 명령 패턴",
+      "description": "셸 명령(Bash, Monitor)에서 찾을 정규식 하나, 대소문자 구분 없음. 맞으면 실행하지 않는다. 여러 조건은 | 로 잇는다. 비우면 Co-Authored-By 커밋만 막는다.",
+      "default": ""
+    },
+    "blockedReason": {
+      "type": "string",
+      "title": "막을 때 Claude 에게 줄 말",
+      "description": "패턴에 걸린 명령을 막을 때 Claude 가 받는 오류 문장. 대신 무엇을 해야 하는지 적어 두면 좋다.",
+      "default": "설정에서 막아 둔 명령이라 실행하지 않았다."
+    }
+  }
+}

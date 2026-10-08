@@ -8,6 +8,8 @@ Claude Code 개인 mod 모음. mod 하나가 `<이름>/` 폴더 하나다. mod�
 | mod | 하는 일 |
 |---|---|
 | [`mermaid-box`](mermaid-box/) | Claude 답변의 ` ```mermaid ` 블록을 터미널에서 박스 그림으로 그린다. 한글 라벨 정렬 보정 포함. |
+| [`command-guard`](command-guard/) | 설정에 적은 패턴이 든 셸 명령과 Co-Authored-By 가 붙은 git 커밋을 실행 전에 막는다. bypass 모드에서도 막힌다. |
+| [`omf-panel`](omf-panel/) | `/omf-panel` 로 omf 진행 중 task 의 단계(01~05)와 계획 승인 여부를 옆 패널에 보여 준다. |
 
 ## 요구 사항
 
@@ -19,9 +21,11 @@ Claude Code 개인 mod 모음. mod 하나가 `<이름>/` 폴더 하나다. mod�
 ```
 /plugin marketplace add aron0628/mods
 /plugin install mermaid-box@mods
+/plugin install command-guard@mods
+/plugin install omf-panel@mods
 ```
 
-첫 줄은 한 번만 하면 된다. 설치한 mod 는 `/plugin` 메뉴에서 끄거나 지울 수 있다.
+첫 줄은 한 번만 하면 된다. 나머지는 쓸 mod 만 고른다. 설치한 mod 는 `/plugin` 메뉴에서 끄거나 지울 수 있다.
 
 업데이트:
 
@@ -56,6 +60,60 @@ Claude 답변이 화면에 그려질 때 닫힌 ` ```mermaid ` 블록을 박스 
 - 한글: 라벨 안의 한글은 정렬을 맞춰 그린다. 노드 이름 자체를 한글로 쓰면(`요청 --> 저장`)
   렌더러가 그리지 못하므로 `A[요청] --> B[저장]` 처럼 쓴다.
 
+## command-guard
+
+Claude 가 셸 명령(Bash, Monitor)을 실행하기 직전에 명령 글자를 보고, 아래에 걸리면 실행하지
+않는다. Claude 는 막힌 이유를 오류로 받는다. 권한 모드와 상관없이 막으므로 bypass 모드에서도,
+다른 탭·서브에이전트에서 실행한 명령도 막힌다.
+
+- **설정한 패턴**: 명령에 패턴이 맞으면 막는다. 정규식 하나(여러 조건은 `|` 로 잇는다), 대소문자 구분 없음.
+- **Co-Authored-By 커밋**: `git commit` 명령에 `Co-Authored-By:` 가 있거나, `-F`/`--file` 로 넘긴
+  메시지 파일에 있으면 막는다. 설정 없이 항상 켜져 있다.
+
+설정은 `/config` 에서 하거나 아래처럼 넣는다. 막을 단어는 저장소가 아니라 내 설정 파일에만 남는다.
+
+```bash
+claude plugin configure command-guard@mods --values-stdin <<'EOF'
+{
+  "blockedPattern": "(^|[\\s;&|(])ENV=[\"']?prod\\b|\\bmake\\s+prod\\b|PROD_SCHEMA",
+  "blockedReason": "운영 DB 접근 금지. 실행할 SQL 을 사용자에게 주고 결과를 받는다."
+}
+EOF
+```
+
+`blockedReason` 에는 막힌 뒤 Claude 가 대신 할 일을 적어 두면 좋다.
+
+한계:
+
+- 명령 글자만 본다. 스크립트 파일 안에서 하는 일, 명령에 드러나지 않은 환경 변수는 보지 못한다.
+- `cd` 뒤에 상대 경로로 넘긴 메시지 파일은 읽지 못해 통과시킨다.
+- 파일을 고치는 도구(Edit, Write)는 대상이 아니다.
+- 패턴이 정규식으로 읽히지 않으면 설정을 고칠 때까지 모든 명령을 막는다.
+
+## omf-panel
+
+`/omf-panel` 을 치면 옆 패널에 진행 중인 omf task 를 보여 주고, 열려 있는 동안 5초마다 다시 읽는다.
+
+```
+my-repo
+  20261008-foo
+    01 계획  ✓ APPROVED
+    02 개발  ✓
+    03 리뷰  -
+    04 검증  -
+    05 완료  -
+```
+
+- 진행 중 task: `.harness/active-plans/<id>` 마커와 `docs/plans/active/<id>/` 폴더
+- 산출물은 `.worktrees/<id>/docs/plans/active/<id>/` 를 먼저 보고, 없으면 메인 체크아웃의
+  `docs/plans/active/<id>/` 를 본다
+- 01 은 `## Status:` 값(DRAFT/APPROVED)을 함께 보여 준다. 경량 경로(`.light`)는 03·05 를 "경량 생략" 으로 표시한다
+- 세션 폴더가 레포가 아니면 두 단계 아래까지 `.harness` 가 있는 폴더를 모두 보여 준다.
+  worktree 안에서 연 세션은 원래 레포를 기준으로 읽는다
+
+리뷰의 CRITICAL/HIGH 개수는 보여 주지 않는다. 재리뷰 결론의 형식이 정해져 있지 않아 지난 회차
+숫자를 읽을 수 있어서다.
+
 ## 구조
 
 ```
@@ -70,6 +128,8 @@ mermaid-box/                ← mod 하나 = 플러그인 하나
 │   └── vendor/             번들한 렌더러(beautiful-mermaid) + 라이선스
 ├── tests/register.test.ts
 └── package.json            렌더러를 다시 번들할 때만 사용
+
+command-guard/, omf-panel/  ← 같은 구성 (vendor·package.json 없음)
 ```
 
 ## 새 mod 추가
@@ -92,8 +152,8 @@ mermaid-box/                ← mod 하나 = 플러그인 하나
 
 ```bash
 claude plugin validate .              # marketplace, 매니페스트, hooks 모듈
-claude plugin test ./mermaid-box      # tests/*.test.ts
-claude --plugin-dir ./mermaid-box     # 그 세션에서만 원본 폴더로 실행
+claude plugin test ./<mod>            # 그 mod 의 tests/*.test.ts
+claude --plugin-dir ./<mod>           # 그 세션에서만 원본 폴더로 실행
 ```
 
 렌더러를 갱신할 때 (beautiful-mermaid 버전을 올릴 때):

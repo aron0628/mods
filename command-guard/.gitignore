@@ -1,0 +1,2 @@
+# Claude Code 가 로드할 때마다 빌드별로 다시 쓰는 타입
+.claude-plugin/types/

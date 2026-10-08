@@ -14,6 +14,18 @@
       "description": "Claude 답변의 ```mermaid 블록을 터미널에서 박스 그림으로 그린다. 한글 라벨 정렬 보정 포함.",
       "version": "0.1.0",
       "source": "./mermaid-box"
+    },
+    {
+      "name": "command-guard",
+      "description": "설정에 적은 패턴이 든 셸 명령과 Co-Authored-By 가 붙은 git 커밋을 실행 전에 막는다. bypass 모드에서도 막힌다.",
+      "version": "0.1.0",
+      "source": "./command-guard"
+    },
+    {
+      "name": "omf-panel",
+      "description": "/omf-panel 로 omf 진행 중 task 의 단계(01~05)와 계획 승인 여부를 옆 패널에 보여 준다.",
+      "version": "0.1.0",
+      "source": "./omf-panel"
     }
   ]
 }

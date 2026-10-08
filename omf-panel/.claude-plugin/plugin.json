@@ -1,0 +1,6 @@
+{
+  "name": "omf-panel",
+  "version": "0.1.0",
+  "description": "/omf-panel 로 omf 진행 중 task 의 단계(01~05)와 계획 승인 여부를 옆 패널에 보여 준다.",
+  "author": { "name": "aron0628", "url": "https://github.com/aron0628" }
+}
