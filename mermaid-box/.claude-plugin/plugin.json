@@ -1,0 +1,6 @@
+{
+  "name": "mermaid-box",
+  "version": "0.1.0",
+  "description": "Claude 답변의 ```mermaid 블록을 터미널에서 박스 그림으로 그린다. 한글 라벨 정렬 보정 포함.",
+  "author": { "name": "aron0628", "url": "https://github.com/aron0628" }
+}

@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "description": "hooks/vendor/mermaid-ascii.js 를 다시 만들 때만 쓴다: npm install && npm run build:vendor",
+  "scripts": {
+    "build:vendor": "esbuild node_modules/beautiful-mermaid/src/ascii/index.ts --bundle --format=esm --platform=neutral --target=es2022 --outfile=hooks/vendor/mermaid-ascii.js && cp node_modules/beautiful-mermaid/LICENSE hooks/vendor/LICENSE-beautiful-mermaid"
+  },
+  "devDependencies": {
+    "beautiful-mermaid": "1.1.3",
+    "esbuild": "0.25.12"
+  }
+}

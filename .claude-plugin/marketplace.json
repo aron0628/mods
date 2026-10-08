@@ -1,0 +1,19 @@
+{
+  "name": "mods",
+  "owner": {
+    "name": "aron0628",
+    "url": "https://github.com/aron0628"
+  },
+  "metadata": {
+    "description": "Claude Code 개인 mod 모음. mod마다 별개 플러그인이라 필요한 것만 골라 설치한다.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "mermaid-box",
+      "description": "Claude 답변의 ```mermaid 블록을 터미널에서 박스 그림으로 그린다. 한글 라벨 정렬 보정 포함.",
+      "version": "0.1.0",
+      "source": "./mermaid-box"
+    }
+  ]
+}
