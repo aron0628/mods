@@ -58,11 +58,20 @@ async function taskOf($: EngineInterface, root: string, id: string): Promise<Tas
   if (dir === undefined) return { id, place: 'none', stages: [] }
 
   const isLight = await $.fs.exists(`${dir}/.light`)
+  const changedAt = new Map<string, number>()
+  for (const { no, file } of STAGES) {
+    const stat = await $.fs.stat(`${dir}/${file}`).catch(() => undefined)
+    if (stat !== undefined) changedAt.set(no, stat.mtimeMs)
+  }
+  // 리뷰 뒤에 개발 로그가 더 늦게 바뀌었으면 지적을 고치는 중이다. 재리뷰가 덧붙으면 리뷰가 다시 늦어진다
+  const isFixing = !changedAt.has('04') && (changedAt.get('02') ?? 0) > (changedAt.get('03') ?? Infinity)
+
   const stages: Stage[] = []
   for (const { no, label, file } of STAGES) {
-    const has = await $.fs.exists(`${dir}/${file}`)
+    const has = changedAt.has(no)
     const status = no === '01' && has ? planStatus(String(await $.fs.read(`${dir}/${file}`).catch(() => ''))) : undefined
-    const note = status ?? (isLight && LIGHT_SKIPS.has(no) ? '경량 생략' : undefined)
+    const fixing = no === '03' && isFixing ? '수정 중 (재리뷰 전)' : undefined
+    const note = status ?? fixing ?? (isLight && LIGHT_SKIPS.has(no) ? '경량 생략' : undefined)
     stages.push({ no, label, has, ...(note !== undefined && { note }) })
   }
   return { id, place: dir === inWorktree ? 'worktree' : 'main', stages }

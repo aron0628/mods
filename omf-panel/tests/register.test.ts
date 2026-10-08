@@ -14,13 +14,18 @@ const RUN = { command: 'omf-panel', args: '', origin: { kind: 'composer' }, pres
 const PLAN = (status: string) => `# plan\n\n## 태스크 목록\n\n## Status: ${status}\n`
 
 describe('omf-panel', () => {
-  // 엔진 자리에서 가짜 폴더를 보여 준다. 파일 목록에서 폴더를 추려 낸다
-  function world(on: On, files: Record<string, string>, cwd: string) {
+  // 엔진 자리에서 가짜 폴더를 보여 준다. 파일 목록에서 폴더를 추려 내고, 수정 시각은 따로 받는다
+  function world(on: On, files: Record<string, string>, cwd: string, mtimes: Record<string, number> = {}) {
     const seen = { lists: 0, panes: [] as string[] }
     const isDir = (path: string) => Object.keys(files).some((file) => file.startsWith(`${path}/`))
     on('session.start', (_$, e) => ({ cwd: e.cwd }))
     on('session.cwd', () => ({ value: cwd }))
     on('fs.exists', (_$, e) => ({ value: e.path in files || isDir(e.path) }))
+    on('fs.stat', (_$, e) => {
+      const text = files[e.path]
+      if (text === undefined) return { deny: `ENOENT: ${e.path}` }
+      return { value: { kind: 'file' as const, size: text.length, mtimeMs: mtimes[e.path] ?? 0, isLink: false } }
+    })
     on('fs.read', (_$, e) => {
       const text = files[e.path]
       return text === undefined ? { deny: `ENOENT: ${e.path}` } : { value: text }
@@ -111,6 +116,36 @@ describe('omf-panel', () => {
     const t = '/w/.worktrees/20261008-a/docs/plans/active/20261008-a'
     world(on, { '/w/.harness/active-plans/20261008-a': '', [`${t}/01-plan.md`]: PLAN('APPROVED') }, '/w/.worktrees/20261008-a')
     expect(await opened($, '/w/.worktrees/20261008-a')).toContain('01 계획  ✓ APPROVED')
+  })
+
+  describe('리뷰 뒤 수정 표시', () => {
+    const t = '/w/docs/plans/active/20261008-e'
+    // 01~03 은 늘 있고, 04 는 검증이 시작됐을 때만 있다
+    const filesOf = (hasVerify: boolean): Record<string, string> => ({
+      '/w/.harness/config.yaml': '',
+      [`${t}/01-plan.md`]: PLAN('APPROVED'),
+      [`${t}/02-dev-log.md`]: '',
+      [`${t}/03-review.md`]: '',
+      ...(hasVerify && { [`${t}/04-verify.md`]: '' }),
+    })
+
+    test('리뷰보다 개발 로그가 늦게 바뀌었으면 수정 중으로 표시한다', async ($, on) => {
+      mock.clock(on)
+      world(on, filesOf(false), '/w', { [`${t}/02-dev-log.md`]: 200, [`${t}/03-review.md`]: 100 })
+      expect(await opened($, '/w')).toContain('03 리뷰  ✓ 수정 중 (재리뷰 전)')
+    })
+
+    test('재리뷰가 덧붙어 리뷰가 더 늦으면 표시하지 않는다', async ($, on) => {
+      mock.clock(on)
+      world(on, filesOf(false), '/w', { [`${t}/02-dev-log.md`]: 100, [`${t}/03-review.md`]: 200 })
+      expect(await opened($, '/w')).toContain('03 리뷰  ✓\n')
+    })
+
+    test('검증이 시작됐으면 표시하지 않는다', async ($, on) => {
+      mock.clock(on)
+      world(on, filesOf(true), '/w', { [`${t}/02-dev-log.md`]: 200, [`${t}/03-review.md`]: 100 })
+      expect(await opened($, '/w')).toContain('03 리뷰  ✓\n')
+    })
   })
 
   test('omf 레포가 없으면 그렇게 말한다', async ($, on) => {
